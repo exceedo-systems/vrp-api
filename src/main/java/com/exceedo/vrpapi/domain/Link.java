@@ -1,25 +1,31 @@
 package com.exceedo.vrpapi.domain;
 
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import lombok.Data;
 
-
-@JsonPropertyOrder(value = { "id", "type" })
+//@JsonPropertyOrder(value = { "id", "type" })
+@JsonPropertyOrder(value = { "id", "type","fromId","toId","cost" })
 @Data
-@Document(collection="link")
+
 public class Link {
 
 	@JsonProperty
-	@Id
 	private int id;
 
 	@JsonProperty
 	private String type;
+	
+	@JsonProperty
+	private int fromId;
+	
+	@JsonProperty
+	private int toId;
+	
+	@JsonProperty
+	private double cost;
+	
 
 	@Override
 	public int hashCode() {

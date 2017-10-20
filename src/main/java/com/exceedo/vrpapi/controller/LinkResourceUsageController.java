@@ -1,7 +1,5 @@
 package com.exceedo.vrpapi.controller;
 
-import java.util.List;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -20,67 +18,83 @@ public class LinkResourceUsageController {
 	@Autowired
 	private LinkResourceUsageRepository linkResourceUsageRepository;
 
-	@RequestMapping(path = "/linkResourceUsage", method = RequestMethod.POST, consumes = "application/json", produces = "application/json")
-	public DataSaveResponse saveLinkResourceUsageList(@RequestBody LinkResourceUsageList linkResourceUsageList) {
+	@RequestMapping(path = "job/{jobId}/linkResourceUsages", method = RequestMethod.POST, consumes = "application/json", produces = "application/json")
+	public DataSaveResponse saveLinkResourceUsageList(@PathVariable String jobId, @RequestBody LinkResourceUsageList linkResourceUsageList) {
 
 		DataSaveResponse response = new DataSaveResponse();
-		int recCount = 0;
-		for (LinkResourceUsage linkResourceUsage : linkResourceUsageList.getLinkResourceUsageList()) {
-			linkResourceUsageRepository.save(linkResourceUsage);
-			recCount++;
-		}
+		linkResourceUsageList.setJobId(jobId);
+		int recCount = linkResourceUsageList.getLinkResourceUsageList().size();
+		linkResourceUsageRepository.save(linkResourceUsageList);
 		response.setSaveCount(recCount);
 		response.setStatus("success");
 		return response;
 	}
 
-	@RequestMapping(path = "/linkResourceUsage", method = RequestMethod.GET, consumes = "application/json", produces = "application/json")
-	public LinkResourceUsageList getLinkResourceUsageList() {
+	@RequestMapping(path = "job/{jobId}/linkResourceUsages", method = RequestMethod.GET, consumes = "application/json", produces = "application/json")
+	public LinkResourceUsageList getLinkResourceUsageList(@PathVariable String jobId) {
 
-		LinkResourceUsageList linkResourceUsageList = new LinkResourceUsageList();
-		List<LinkResourceUsage> list = linkResourceUsageRepository.findAll();
-		linkResourceUsageList.setLinkResourceUsageList(list);
+		LinkResourceUsageList linkResourceUsageList = linkResourceUsageRepository.findOne(jobId);
 		return linkResourceUsageList;
 	}
 
-	@RequestMapping(path = "/linkResourceUsage/{linkId}", method = RequestMethod.GET, consumes = "application/json", produces = "application/json")
-	public LinkResourceUsage getLinkResourceUsage(@PathVariable String linkId) {
-		LinkResourceUsage linkResourceUsage = linkResourceUsageRepository.findOne(new Integer(linkId));
-		return linkResourceUsage;
+	@RequestMapping(path = "job/{jobId}/link/{linkId}/resource/{resourceId}", method = RequestMethod.GET, consumes = "application/json", produces = "application/json")
+	public LinkResourceUsage getLinkResourceUsage(@PathVariable String jobId, @PathVariable String linkId, @PathVariable String resourceId) {
+		LinkResourceUsageList linkResourceUsageList = linkResourceUsageRepository.findOne(jobId);
+		for (LinkResourceUsage linkResourceUsage : linkResourceUsageList.getLinkResourceUsageList()) {
+			if(linkResourceUsage.getLinkId() == Integer.valueOf(linkId) &&
+					linkResourceUsage.getResourceId() == Integer.valueOf(resourceId)) {
+				return linkResourceUsage;
+			}
+		}
+		return null;
 	}
 
-	@RequestMapping(path = "/linkResourceUsage", method = RequestMethod.DELETE, consumes = "application/json", produces = "application/json")
-	public DataDeleteResponse deleteLinkResourceUsageList() {
+	@RequestMapping(path = "job/{jobId}/linkResourceUsages", method = RequestMethod.DELETE, consumes = "application/json", produces = "application/json")
+	public DataDeleteResponse deleteLinkResourceUsageList(@PathVariable String jobId) {
 
 		DataDeleteResponse response = new DataDeleteResponse();
-		response.setDeleteCount((int) linkResourceUsageRepository.count());
-		linkResourceUsageRepository.deleteAll();
+		LinkResourceUsageList linkResourceUsageList = linkResourceUsageRepository.findOne(jobId);
+		response.setDeleteCount((int)linkResourceUsageList.getLinkResourceUsageList().size() );
+		linkResourceUsageRepository.delete(jobId);
 		response.setStatus("success");
 		return response;
 	}
 
-	@RequestMapping(path = "/linkResourceUsage/{linkId}", method = RequestMethod.DELETE, consumes = "application/json", produces = "application/json")
-	public DataDeleteResponse deleteLinkResourceUsage(@PathVariable String linkId) {
+	@RequestMapping(path = "job/{jobId}/link/{linkId}/resource/{resourceId}", method = RequestMethod.DELETE, consumes = "application/json", produces = "application/json")
+	public DataDeleteResponse deleteLinkResourceUsage(@PathVariable String jobId, @PathVariable String linkId, @PathVariable String resourceId) {
 
 		DataDeleteResponse response = new DataDeleteResponse();
-		linkResourceUsageRepository.delete(new Integer(linkId));
+		LinkResourceUsageList linkResourceUsageList = linkResourceUsageRepository.findOne(jobId);
+		LinkResourceUsage linkResourceUsageToBeDeleted = null;
+
+		for (LinkResourceUsage linkResourceUsage : linkResourceUsageList.getLinkResourceUsageList()) {
+			if(linkResourceUsage.getLinkId() == Integer.valueOf(linkId) &&
+					linkResourceUsage.getResourceId() == Integer.valueOf(resourceId)) {
+				linkResourceUsageToBeDeleted = linkResourceUsage;
+			}
+		}
+		linkResourceUsageList.getLinkResourceUsageList().remove(linkResourceUsageToBeDeleted);
+		linkResourceUsageRepository.save(linkResourceUsageList);
 		response.setDeleteCount(1);
 		response.setStatus("success");
 		return response;
 	}
-
-	@RequestMapping(path = "/linkResourceUsage/{linkId}", method = RequestMethod.PUT, consumes = "application/json", produces = "application/json")
-	public DataSaveResponse saveLinkResourceUsage(@PathVariable String linkId, @RequestBody LinkResourceUsage linkResourceUsage) {
+	
+	
+	@RequestMapping(path = "job/{jobId}/link/{linkId}/resource/{resourceId}", method = RequestMethod.PUT, consumes = "application/json", produces = "application/json")
+	public DataSaveResponse saveLinkResourceUsage(@PathVariable String jobId, @PathVariable String linkId, @PathVariable String resourceId, @RequestBody LinkResourceUsage linkResourceUsage) {
 
 		DataSaveResponse response = new DataSaveResponse();
-		int recCount = 1;
-
-		LinkResourceUsage linkResourceUsageInDB = linkResourceUsageRepository.findOne(new Integer(linkId));
-		linkResourceUsageInDB.setResourceId(linkResourceUsage.getResourceId());
-		linkResourceUsageInDB.setResourceUsage(100.00);
-		linkResourceUsageRepository.save(linkResourceUsageInDB);
-
-		response.setSaveCount(recCount);
+		LinkResourceUsageList linkResourceUsageList = linkResourceUsageRepository.findOne(jobId);
+		for (LinkResourceUsage linkResourceUsageToBeUpdated : linkResourceUsageList.getLinkResourceUsageList()) {
+			if(linkResourceUsageToBeUpdated.getLinkId() == Integer.valueOf(linkId) &&
+					linkResourceUsageToBeUpdated.getResourceId() == Integer.valueOf(resourceId)) {
+				linkResourceUsageToBeUpdated = linkResourceUsage;
+			}
+		}
+		
+		linkResourceUsageRepository.save(linkResourceUsageList);
+		response.setSaveCount(1);
 		response.setStatus("success");
 		return response;
 	}

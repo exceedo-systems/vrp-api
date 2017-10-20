@@ -1,20 +1,17 @@
 package com.exceedo.vrpapi.domain;
 
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import lombok.Data;
 
-@JsonPropertyOrder(value = { "id", "name", "routeId" })
+//@JsonPropertyOrder(value = { "id", "name", "routeId" })
+@JsonPropertyOrder(value = { "id", "name", "routeId","amlStr","minLimit","maxLimit", "maxAt" })
 @Data
-@Document(collection ="resource")
+
 public class Resource {
 	
 	@JsonProperty
-	@Id
 	private int id;
 
 	@JsonProperty
@@ -22,6 +19,20 @@ public class Resource {
 	
 	@JsonProperty
 	private int routeId;
+	
+	@JsonProperty
+	private String  amlStr;
+	
+	@JsonProperty
+	private double minLimit;
+	
+	@JsonProperty
+	private double maxLimit;
+	
+	@JsonProperty
+	private String maxAt;
+	
+	
 
 	@Override
 	public int hashCode() {

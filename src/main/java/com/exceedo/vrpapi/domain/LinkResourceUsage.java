@@ -1,8 +1,5 @@
 package com.exceedo.vrpapi.domain;
 
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
@@ -10,10 +7,9 @@ import lombok.Data;
 
 @JsonPropertyOrder(value = { "linkId", "resourceId", "resourceUsage" })
 @Data
-@Document(collection="link_resource_usage")
+
 public class LinkResourceUsage {
 
-	@Id
 	@JsonProperty
 	private int linkId;
 

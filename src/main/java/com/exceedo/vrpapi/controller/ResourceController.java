@@ -1,7 +1,5 @@
 package com.exceedo.vrpapi.controller;
 
-import java.util.List;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -19,67 +17,80 @@ public class ResourceController {
 	@Autowired
 	private ResourceRepository resourceRepository;
 
-	@RequestMapping(path = "/resource", method = RequestMethod.POST, consumes = "application/json", produces = "application/json")
-	public DataSaveResponse saveResorceList(@RequestBody ResourceList resourceList) {
+	@RequestMapping(path = "job/{jobId}/resources", method = RequestMethod.POST, consumes = "application/json", produces = "application/json")
+	public DataSaveResponse saveResourceList(@PathVariable String jobId, @RequestBody ResourceList resourceList) {
 
 		DataSaveResponse response = new DataSaveResponse();
-		int recCount = 0;
-		for (Resource resource : resourceList.getResourceList()) {
-			resourceRepository.save(resource);
-			recCount++;
-		}
+		resourceList.setJobId(jobId);
+		int recCount = resourceList.getResourceList().size();
+		resourceRepository.save(resourceList);
 		response.setSaveCount(recCount);
 		response.setStatus("success");
 		return response;
 	}
 
-	@RequestMapping(path = "/resource", method = RequestMethod.GET, consumes = "application/json", produces = "application/json")
-	public ResourceList getResourceList() {
+	@RequestMapping(path = "job/{jobId}/resources", method = RequestMethod.GET, consumes = "application/json", produces = "application/json")
+	public ResourceList getResourceList(@PathVariable String jobId) {
 
-		ResourceList resourceList = new ResourceList();
-		List<Resource> list = resourceRepository.findAll();
-		resourceList.setResourceList(list);
+		ResourceList resourceList = resourceRepository.findOne(jobId);
 		return resourceList;
 	}
 
-	@RequestMapping(path = "/resource/{resourceId}", method = RequestMethod.GET, consumes = "application/json", produces = "application/json")
-	public Resource getResourceList(@PathVariable String resourceId) {
-		Resource resource = resourceRepository.findOne(new Integer(resourceId));
-		return resource;
+	@RequestMapping(path = "job/{jobId}/resource/{resourceId}", method = RequestMethod.GET, consumes = "application/json", produces = "application/json")
+	public Resource getResource(@PathVariable String jobId, @PathVariable String resourceId) {
+		ResourceList resourceList = resourceRepository.findOne(jobId);
+		for (Resource resource : resourceList.getResourceList()) {
+			if(resource.getId() == Integer.valueOf(resourceId)) {
+				return resource;
+			}
+		}
+		return null;
 	}
 
-	@RequestMapping(path = "/resource", method = RequestMethod.DELETE, consumes = "application/json", produces = "application/json")
-	public DataDeleteResponse deleteResourceList() {
+	@RequestMapping(path = "job/{jobId}/resources", method = RequestMethod.DELETE, consumes = "application/json", produces = "application/json")
+	public DataDeleteResponse deleteResourceList(@PathVariable String jobId) {
 
 		DataDeleteResponse response = new DataDeleteResponse();
-		response.setDeleteCount((int) resourceRepository.count());
-		resourceRepository.deleteAll();
+		ResourceList resourceList = resourceRepository.findOne(jobId);
+		response.setDeleteCount((int) resourceList.getResourceList().size() );
+		resourceRepository.delete(jobId);
 		response.setStatus("success");
 		return response;
 	}
 
-	@RequestMapping(path = "/resource/{resourceId}", method = RequestMethod.DELETE, consumes = "application/json", produces = "application/json")
-	public DataDeleteResponse deleteResource(@PathVariable String resourceId) {
+	@RequestMapping(path = "job/{jobId}/resource/{resourceId}", method = RequestMethod.DELETE, consumes = "application/json", produces = "application/json")
+	public DataDeleteResponse deleteResource(@PathVariable String jobId, @PathVariable String resourceId) {
 
 		DataDeleteResponse response = new DataDeleteResponse();
-		resourceRepository.delete(new Integer(resourceId));
+		ResourceList resourceList = resourceRepository.findOne(jobId);
+		Resource resourceToBeDeleted = null;
+		for (Resource resource : resourceList.getResourceList()) {
+			if(resource.getId() == Integer.valueOf(resourceId)) {
+				resourceToBeDeleted = resource;
+			}
+		}
+		resourceList.getResourceList().remove(resourceToBeDeleted);
+		
+		resourceRepository.save(resourceList);
 		response.setDeleteCount(1);
 		response.setStatus("success");
 		return response;
 	}
-
-	@RequestMapping(path = "/resource/{resourceId}", method = RequestMethod.PUT, consumes = "application/json", produces = "application/json")
-	public DataSaveResponse saveResource(@PathVariable String resourceId, @RequestBody Resource resource) {
+	
+	
+	@RequestMapping(path = "job/{jobId}/resource/{resourceId}", method = RequestMethod.PUT, consumes = "application/json", produces = "application/json")
+	public DataSaveResponse saveResource(@PathVariable String jobId, @PathVariable String resourceId, @RequestBody Resource resource) {
 
 		DataSaveResponse response = new DataSaveResponse();
-		int recCount = 1;
-
-		Resource resourceInDB = resourceRepository.findOne(new Integer(resourceId));
-		resourceInDB.setName(resource.getName());
-		resourceInDB.setRouteId(resource.getRouteId());
-		resourceRepository.save(resourceInDB);
-
-		response.setSaveCount(recCount);
+		ResourceList resourceList = resourceRepository.findOne(jobId);
+		for (Resource resourceToBeUpdated : resourceList.getResourceList()) {
+			if(resourceToBeUpdated.getId() == Integer.valueOf(resourceId)) {
+				resourceToBeUpdated = resource;
+			}
+		}
+		
+		resourceRepository.save(resourceList);
+		response.setSaveCount(1);
 		response.setStatus("success");
 		return response;
 	}

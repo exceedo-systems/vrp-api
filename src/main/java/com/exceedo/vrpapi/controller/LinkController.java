@@ -1,7 +1,5 @@
 package com.exceedo.vrpapi.controller;
 
-import java.util.List;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -20,66 +18,80 @@ public class LinkController {
 	@Autowired
 	private LinkRepository linkRepository;
 
-	@RequestMapping(path = "/link", method = RequestMethod.POST, consumes = "application/json", produces = "application/json")
-	public DataSaveResponse saveLinkList(@RequestBody LinkList linkList) {
+	@RequestMapping(path = "job/{jobId}/links", method = RequestMethod.POST, consumes = "application/json", produces = "application/json")
+	public DataSaveResponse saveLinkList(@PathVariable String jobId, @RequestBody LinkList linkList) {
 
 		DataSaveResponse response = new DataSaveResponse();
-		int recCount = 0;
-		for (Link link : linkList.getLinkList()) {
-			linkRepository.save(link);
-			recCount++;
-		}
+		linkList.setJobId(jobId);
+		int recCount = linkList.getLinkList().size();
+		linkRepository.save(linkList);
 		response.setSaveCount(recCount);
 		response.setStatus("success");
 		return response;
 	}
 
-	@RequestMapping(path = "/link", method = RequestMethod.GET, consumes = "application/json", produces = "application/json")
-	public LinkList getLinkList() {
+	@RequestMapping(path = "job/{jobId}/links", method = RequestMethod.GET, consumes = "application/json", produces = "application/json")
+	public LinkList getLinkList(@PathVariable String jobId) {
 
-		LinkList linkList = new LinkList();
-		List<Link> list = linkRepository.findAll();
-		linkList.setLinkList(list);
+		LinkList linkList = linkRepository.findOne(jobId);
 		return linkList;
 	}
 
-	@RequestMapping(path = "/link/{linkId}", method = RequestMethod.GET, consumes = "application/json", produces = "application/json")
-	public Link getLinkList(@PathVariable String linkId) {
-		Link link = linkRepository.findOne(new Integer(linkId));
-		return link;
+	@RequestMapping(path = "job/{jobId}/link/{linkId}", method = RequestMethod.GET, consumes = "application/json", produces = "application/json")
+	public Link getLink(@PathVariable String jobId, @PathVariable String linkId) {
+		LinkList linkList = linkRepository.findOne(jobId);
+		for (Link link : linkList.getLinkList()) {
+			if(link.getId() == Integer.valueOf(linkId)) {
+				return link;
+			}
+		}
+		return null;
 	}
 
-	@RequestMapping(path = "/link", method = RequestMethod.DELETE, consumes = "application/json", produces = "application/json")
-	public DataDeleteResponse deleteLinkList() {
+	@RequestMapping(path = "job/{jobId}/links", method = RequestMethod.DELETE, consumes = "application/json", produces = "application/json")
+	public DataDeleteResponse deleteLinkList(@PathVariable String jobId) {
 
 		DataDeleteResponse response = new DataDeleteResponse();
-		response.setDeleteCount((int) linkRepository.count());
-		linkRepository.deleteAll();
+		LinkList linkList = linkRepository.findOne(jobId);
+		response.setDeleteCount((int) linkList.getLinkList().size() );
+		linkRepository.delete(jobId);
 		response.setStatus("success");
 		return response;
 	}
 
-	@RequestMapping(path = "/link/{linkId}", method = RequestMethod.DELETE, consumes = "application/json", produces = "application/json")
-	public DataDeleteResponse deleteLink(@PathVariable String linkId) {
+	@RequestMapping(path = "job/{jobId}/link/{linkId}", method = RequestMethod.DELETE, consumes = "application/json", produces = "application/json")
+	public DataDeleteResponse deleteLink(@PathVariable String jobId, @PathVariable String linkId) {
 
 		DataDeleteResponse response = new DataDeleteResponse();
-		linkRepository.delete(new Integer(linkId));
+		LinkList linkList = linkRepository.findOne(jobId);
+		Link linkToBeDeleted = null;
+		for (Link link : linkList.getLinkList()) {
+			if(link.getId() == Integer.valueOf(linkId)) {
+				linkToBeDeleted = link;
+			}
+		}
+		linkList.getLinkList().remove(linkToBeDeleted);
+		
+		linkRepository.save(linkList);
 		response.setDeleteCount(1);
 		response.setStatus("success");
 		return response;
 	}
-
-	@RequestMapping(path = "/link/{linkId}", method = RequestMethod.PUT, consumes = "application/json", produces = "application/json")
-	public DataSaveResponse saveLink(@PathVariable String linkId, @RequestBody Link link) {
+	
+	
+	@RequestMapping(path = "job/{jobId}/link/{linkId}", method = RequestMethod.PUT, consumes = "application/json", produces = "application/json")
+	public DataSaveResponse saveLink(@PathVariable String jobId, @PathVariable String linkId, @RequestBody Link link) {
 
 		DataSaveResponse response = new DataSaveResponse();
-		int recCount = 1;
-
-		Link linkInDB = linkRepository.findOne(new Integer(linkId));
-		linkInDB.setType(link.getType());
-		linkRepository.save(linkInDB);
-
-		response.setSaveCount(recCount);
+		LinkList linkList = linkRepository.findOne(jobId);
+		for (Link linkToBeUpdated : linkList.getLinkList()) {
+			if(linkToBeUpdated.getId() == Integer.valueOf(linkId)) {
+				linkToBeUpdated = link;
+			}
+		}
+		
+		linkRepository.save(linkList);
+		response.setSaveCount(1);
 		response.setStatus("success");
 		return response;
 	}
