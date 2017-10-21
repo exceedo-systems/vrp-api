@@ -13,15 +13,17 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import lombok.Data;
 
 @Data
-@JsonPropertyOrder(value = {"userName","password","apiKey","jobCount","jobs"})
+@JsonPropertyOrder(value = {"userName","password","userType", "apiKey","jobCount","jobs"})
 @JsonInclude(Include.NON_NULL)
-@Document(collection="API_Client")
-public class ApiClient {
+@Document(collection="API_User")
+public class ApiUser {
 	
 	@Id
 	private String userName;
 	
 	private String password;
+	
+	private UserType userType;
 	
 	private String apiKey;
 	

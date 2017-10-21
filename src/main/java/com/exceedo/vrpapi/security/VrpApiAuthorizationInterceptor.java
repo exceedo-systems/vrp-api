@@ -12,9 +12,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
 
-import com.exceedo.vrpapi.domain.ApiClient;
+import com.exceedo.vrpapi.domain.ApiUser;
+import com.exceedo.vrpapi.domain.UserType;
 import com.exceedo.vrpapi.domain.VrpJob;
-import com.exceedo.vrpapi.repository.ApiClientRepository;
+import com.exceedo.vrpapi.repository.ApiUserRepository;
 
 import lombok.extern.log4j.Log4j;
 
@@ -23,12 +24,12 @@ import lombok.extern.log4j.Log4j;
 public class VrpApiAuthorizationInterceptor extends HandlerInterceptorAdapter {
 
 	@Autowired
-	private ApiClientRepository apiClientRepository;
+	private ApiUserRepository apiUserRepository;
 
-	public ApiClient getApiClientByUsername(String username) {
-		ApiClient apiClient = apiClientRepository.findOne(username);
-		if (apiClient != null) {
-			return apiClient;
+	public ApiUser getApiClientByUsername(String username) {
+		ApiUser apiUser = apiUserRepository.findOne(username);
+		if (apiUser != null) {
+			return apiUser;
 		} else {
 			return null;
 		}
@@ -38,8 +39,8 @@ public class VrpApiAuthorizationInterceptor extends HandlerInterceptorAdapter {
 	public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object object) throws Exception {
 		String apiKey = ((HttpServletRequest) request).getHeader("x-api-key");
 		Principal principal = ((HttpServletRequest) request).getUserPrincipal();
-		ApiClient client = getApiClientByUsername(principal.getName());
-		if (!client.getApiKey().equals(apiKey)) {
+		ApiUser apiUser = getApiClientByUsername(principal.getName());
+		if (!apiUser.getApiKey().equals(apiKey)) {
 		        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
 		        PrintWriter writer = response.getWriter();
 		        writer.println("HTTP Status 403 - Invalid API Key");
@@ -48,25 +49,40 @@ public class VrpApiAuthorizationInterceptor extends HandlerInterceptorAdapter {
 
 		String requestUri = ((HttpServletRequest) request).getRequestURI();
 		log.info("URI - " + requestUri);
-		int index = requestUri.indexOf("/job/");
+		int adminServiceIndex = requestUri.indexOf("/admin/");
+		if(adminServiceIndex >= 0) {
+			if(apiUser.getUserType() != UserType.ADMIN) {
+				response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+			    PrintWriter writer = response.getWriter();
+			    writer.println("HTTP Status 403 - You are not allowed to access admin services");
+			    return false;
+			}
+		}else {
+			
+			int index = requestUri.indexOf("/job/");
 
-		if (index >= 0) {
-			String requestUriPartial = requestUri.substring(index + 1);
-			log.info("requestUriPartial - " + requestUriPartial);
-			String[] uriTokens = requestUriPartial.split("/");
-			if (uriTokens.length > 1) {
-				final String jobId = uriTokens[1];
-				log.info("jobId - " + jobId);
-				Stream<VrpJob> jobStream = client.getJobs().stream();
-				boolean clientJob = jobStream.anyMatch(job -> job.getId().equals(jobId));
-				if (!clientJob) {
-					response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-				    PrintWriter writer = response.getWriter();
-				    writer.println("HTTP Status 403 - You are not allowed to access Job -> " + jobId);
-				    return false;
+			if (index >= 0) {
+				String requestUriPartial = requestUri.substring(index + 1);
+				log.info("requestUriPartial - " + requestUriPartial);
+				String[] uriTokens = requestUriPartial.split("/");
+				if (uriTokens.length > 1) {
+					final String jobId = uriTokens[1];
+					log.info("jobId - " + jobId);
+					Stream<VrpJob> jobStream = apiUser.getJobs().stream();
+					boolean clientJob = jobStream.anyMatch(job -> job.getId().equals(jobId));
+					if (!clientJob) {
+						response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+					    PrintWriter writer = response.getWriter();
+					    writer.println("HTTP Status 403 - You are not allowed to access Job -> " + jobId);
+					    return false;
+					}
 				}
 			}
+			
+			
 		}
+		
+
 		return true;
 	}
 

@@ -3,8 +3,8 @@ package com.exceedo.vrpapi.service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.exceedo.vrpapi.domain.ApiClient;
-import com.exceedo.vrpapi.repository.ApiClientRepository;
+import com.exceedo.vrpapi.domain.ApiUser;
+import com.exceedo.vrpapi.repository.ApiUserRepository;
 
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.userdetails.User;
@@ -17,14 +17,14 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 public class ApiClientUserDetailsService implements UserDetailsService {
 
 	@Autowired
-	private ApiClientRepository apiClientRepository;
+	private ApiUserRepository apiUserRepository;
 	
 	
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-      ApiClient apiClient = apiClientRepository.findOne(username);
-      if(apiClient != null) {
-      return new User(apiClient.getUserName(), apiClient.getPassword(), true, true, true, true,
+      ApiUser apiUser = apiUserRepository.findOne(username);
+      if(apiUser != null) {
+      return new User(apiUser.getUserName(), apiUser.getPassword(), true, true, true, true,
               AuthorityUtils.createAuthorityList("USER"));
       } else {
         throw new UsernameNotFoundException("could not find the user '"
